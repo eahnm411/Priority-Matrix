@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مصفوفة الأولويات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F5F0; --card:#FFFFFF; --ink:#1E1D1B; --sub:#6B6960; --line:#E4E1D8;
+    --q1:#D97757; --q2:#3C6E5C; --q3:#4A6FA5; --q4:#8C877A;
+  }
+  [data-theme="dark"]{
+    --bg:#171613; --card:#221F1A; --ink:#F2EFE8; --sub:#A6A296; --line:#38352C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Tajawal',-apple-system,'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);padding:20px;transition:background .2s,color .2s}
+  .header-row{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin-bottom:4px}
+  .theme-btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
+  h1{font-size:20px;font-weight:600;margin:0 0 4px}
+  h3{font-size:13px;font-weight:600;margin:0 0 10px;color:var(--sub)}
+  p.sub{color:var(--sub);font-size:13px;margin:0 0 18px}
+
+  /* dashboard */
+  .dash{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;max-width:1180px;margin-bottom:20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .bars{display:flex;flex-direction:column;gap:8px}
+  .bar-row{display:flex;align-items:center;gap:8px;font-size:12px}
+  .bar-label{width:110px;color:var(--sub);flex-shrink:0}
+  .bar-track{flex:1;background:var(--bg);border-radius:6px;height:10px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:6px}
+  .bar-count{width:24px;text-align:left;color:var(--sub)}
+  .donut-wrap{display:flex;align-items:center;gap:16px}
+  .donut{width:90px;height:90px;border-radius:50%;flex-shrink:0}
+  .donut-text{font-size:12px;color:var(--sub)}
+  .donut-text b{font-size:22px;color:var(--ink);display:block}
+
+  /* layout: sidebar + matrix */
+  .layout{display:grid;grid-template-columns:220px 1fr 220px;gap:14px;max-width:1180px}
+  .sidebar{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;align-self:start}
+  .completed-sidebar{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;align-self:start;max-height:600px;overflow-y:auto}
+  .add-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  .add-row input,.add-row select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--bg)}
+  .add-row button{padding:8px 10px;border:none;border-radius:8px;background:var(--ink);color:#fff;font-size:13px;cursor:pointer}
+  .add-row button:hover{opacity:.85}
+  #sideList{min-height:60px;max-height:520px;overflow-y:auto}
+  #sideList .empty{font-size:12px;color:var(--sub)}
+
+  .ai-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;background:var(--bg);border-radius:8px;padding:8px}
+  .ai-row textarea{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12px;background:#fff;resize:vertical;min-height:50px;font-family:inherit}
+  .ai-row button{padding:8px 10px;border:none;border-radius:8px;background:var(--q3);color:#fff;font-size:13px;cursor:pointer}
+  .ai-row button:disabled{opacity:.6;cursor:default}
+  .ai-row button:hover:not(:disabled){opacity:.85}
+  .ai-file-row{display:flex;align-items:center;gap:6px}
+  .ai-file-btn{background:#fff!important;color:var(--ink)!important;border:1px solid var(--line)!important;font-size:11px!important;padding:5px 8px!important}
+  .ai-file-name{font-size:11px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .notif-row{max-width:1180px;margin-bottom:14px}
+  .notif-row button{font-size:12px;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;cursor:pointer}
+  .notif-row button:hover{background:var(--bg)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .quad{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;min-height:180px}
+  .quad h2{font-size:14px;font-weight:600;margin:0 0 2px;display:flex;align-items:center;gap:6px}
+  .quad .desc{font-size:12px;color:var(--sub);margin:0 0 10px}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  #q1 .dot{background:var(--q1)} #q1{border-top:3px solid var(--q1)}
+  #q2 .dot{background:var(--q2)} #q2{border-top:3px solid var(--q2)}
+  #q3 .dot{background:var(--q3)} #q3{border-top:3px solid var(--q3)}
+  #q4 .dot{background:var(--q4)} #q4{border-top:3px solid var(--q4)}
+
+  .list{display:flex;flex-direction:column}
+  .list.cols{display:block;column-count:2;column-gap:10px}
+  .list.cols .task{break-inside:avoid}
+
+  .task{background:var(--task-bg,var(--bg));border:1px solid var(--line);border-radius:7px;padding:5px 7px;margin-bottom:5px;font-size:12px;cursor:grab;position:relative}
+  .task.dragging{opacity:.4}
+  .task.done .txt{text-decoration:line-through;color:var(--sub)}
+  .task-top{display:flex;align-items:flex-start;gap:5px}
+  .task-top input[type=checkbox]{margin-top:3px;flex-shrink:0}
+  .title-wrap{flex:1;min-width:0}
+  .task .txt{font-size:12px;font-weight:700;line-height:1.5;word-break:break-word;user-select:text;-webkit-user-drag:none;cursor:text}
+  .task .arrow{border:none;background:none;color:var(--sub);cursor:pointer;flex-shrink:0;padding:2px;display:inline-flex;align-items:center;vertical-align:middle;transition:transform .15s}
+  .task .arrow svg{width:11px;height:11px}
+  .task.open .arrow{transform:rotate(180deg)}
+  .task-actions{display:flex;gap:2px;flex-shrink:0;margin-inline-start:auto}
+  .task .expand-btn{border:none;background:none;color:var(--sub);cursor:pointer;font-size:12px;flex-shrink:0;padding:0 2px}
+  .task .del{color:var(--sub);cursor:pointer;font-size:13px;border:none;background:none;padding:0 2px;flex-shrink:0}
+  .task .del:hover{color:#c0392b}
+  .task-meta{display:flex;gap:5px;align-items:center;margin-top:4px;flex-wrap:nowrap}
+  .task-meta input[type=date]{font-size:10px;border:1px solid var(--line);border-radius:5px;padding:1px 3px;background:#fff;width:78px}
+  .created{font-size:10px;color:var(--sub);white-space:nowrap}
+  .color-btn{width:13px;height:13px;border-radius:50%;border:1px solid var(--line);cursor:pointer;flex-shrink:0;background:var(--task-color,#999)}
+  .colors{display:none;gap:4px;margin-top:4px;position:absolute;background:#fff;border:1px solid var(--line);border-radius:6px;padding:4px;z-index:5;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+  .colors.open{display:flex}
+  .swatch{width:14px;height:14px;border-radius:50%;border:1px solid var(--line);cursor:pointer;flex-shrink:0}
+  .empty{font-size:12px;color:var(--sub);padding:6px 2px}
+  .drop-hover{outline:2px dashed var(--sub);outline-offset:-4px}
+  .completed-card{max-width:1180px;margin-top:14px}
+  #completedList{display:flex;flex-direction:column;gap:4px}
+
+  .task-details{display:none;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}
+  .task.open .task-details{display:block}
+  .task-details textarea{width:100%;font-size:11px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:#fff;resize:vertical;min-height:36px;font-family:inherit}
+  .task-details .sec-title{font-size:10px;color:var(--sub);margin:6px 0 3px}
+  .checklist-item,.comment-item{display:flex;align-items:flex-start;gap:4px;font-size:11px;margin-bottom:3px}
+  .checklist-item .ctxt.done{text-decoration:line-through;color:var(--sub)}
+  .checklist-item .ctxt,.comment-item .cmtxt{flex:1;word-break:break-word}
+  .mini-add{display:flex;gap:4px;margin-top:3px}
+  .mini-add input{flex:1;font-size:11px;border:1px solid var(--line);border-radius:5px;padding:3px 5px}
+  .mini-add button{font-size:11px;border:1px solid var(--line);border-radius:5px;background:#fff;padding:3px 7px;cursor:pointer}
+  .mini-del{border:none;background:none;color:var(--sub);cursor:pointer;font-size:11px;flex-shrink:0}
+  .comment-item .cdate{font-size:9px;color:var(--sub);white-space:nowrap}
+
+  .modal-overlay{display:none;position:fixed;inset:0;background:transparent;z-index:50;align-items:center;justify-content:center}
+  .modal-overlay.open{display:flex}
+  .modal-box{background:var(--card);border-radius:12px;padding:18px;width:420px;max-width:92vw;max-height:85vh;overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,.22),0 0 0 1px var(--line)}
+  .modal-box h2{font-size:15px;margin:0 0 10px}
+  .modal-close{float:left;border:none;background:none;font-size:16px;color:var(--sub);cursor:pointer}
+
+  .toast-wrap{position:fixed;bottom:20px;left:20px;display:flex;flex-direction:column;gap:8px;z-index:100}
+  .toast{background:var(--ink);color:#fff;font-size:12px;padding:8px 14px;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.18);animation:toast-in .15s ease-out}
+  @keyframes toast-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+  .due-banner{max-width:1180px;margin-bottom:14px;background:var(--bg-danger,#FCEBEB);border:1px solid var(--q1);border-radius:10px;padding:10px 14px;font-size:12px;display:none}
+  .due-banner.show{display:block}
+  .due-banner b{font-weight:700}
+  .due-banner ul{margin:6px 0 0;padding-inline-start:18px}
+
+  @media(max-width:1000px){.layout{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.dash{grid-template-columns:1fr}}
+  @media(max-width:520px){
+    body{padding:12px}
+    .header-row{flex-wrap:wrap;gap:8px}
+    h1{font-size:17px}
+    .add-row input,.add-row select,.add-row button,.ai-row textarea,.ai-row button{font-size:14px}
+    .task{font-size:13px}
+    .task .txt{font-size:13px}
+    .task-top input[type=checkbox]{width:16px;height:16px}
+    .arrow,.expand-btn,.del{padding:6px!important}
+    .list.cols{column-count:1}
+    .completed-sidebar,.sidebar{max-height:none}
+    .bar-label{width:84px;font-size:11px}
+    .donut-wrap{flex-wrap:wrap}
+    .toast-wrap{left:8px;right:8px;bottom:12px}
+    .toast{width:100%}
+  }
+</style>
+</head>
+<body>
+  <div class="header-row">
+    <h1>مصفوفة الأولويات</h1>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙 داكن</button>
+  </div>
+  <p class="sub">أضف مهمة من الشريط الجانبي، اسحبها إلى الخانة المناسبة، ورتبها كما تريد.</p>
+
+  <div class="due-banner" id="dueBanner"></div>
+
+  <div class="notif-row">
+    <button id="notifBtn" onclick="enableNotifications()">🔔 تفعيل تذكيرات المتصفح</button>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <div class="dash">
+    <div class="card">
+      <h3>توزيع المهام حسب الأهمية</h3>
+      <div class="bars" id="importanceBars"></div>
+    </div>
+    <div class="card">
+      <h3>نسبة الإنجاز</h3>
+      <div class="donut-wrap">
+        <svg class="donut" id="donutSvg" viewBox="0 0 36 36"></svg>
+        <div class="donut-text"><b id="doneCount">0/0</b>مهمة مكتملة</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <div class="add-row">
+        <input id="taskInput" type="text" placeholder="اكتب مهمة جديدة...">
+        <button onclick="addTask()">إضافة إلى القائمة</button>
+      </div>
+      <div class="ai-row">
+        <textarea id="aiInput" placeholder="صف مهمتك بلغة طبيعية، وسنتولى الصياغة والتصنيف والجدولة..."></textarea>
+        <input type="file" id="aiFile" style="display:none" onchange="onAiFileChange(this)">
+        <div class="ai-file-row">
+          <button type="button" class="ai-file-btn" onclick="document.getElementById('aiFile').click()">📎 إرفاق ملف</button>
+          <span id="aiFileName" class="ai-file-name"></span>
+        </div>
+        <button id="aiBtn" onclick="aiCreateTask()">✨ إنشاء بالذكاء الاصطناعي</button>
+      </div>
+      <h3>كل المهام</h3>
+      <div id="sideList" ondragover="allowDrop(event)" ondrop="drop(event,'inbox')" ondragleave="dragLeave(event)"></div>
+    </div>
+
+    <div class="grid">
+      <div class="quad" id="q1" ondragover="allowDrop(event)" ondrop="drop(event,'q1')" ondragleave="dragLeave(event)">
+        <h2><span class="dot"></span>افعله الآن</h2>
+        <p class="desc">مهم وعاجل</p>
+        <div class="list" id="list-q1"></div>
+      </div>
+      <div class="quad" id="q2" ondragover="allowDrop(event)" ondrop="drop(event,'q2')" ondragleave="dragLeave(event)">
+        <h2><span class="dot"></span>جدوله</h2>
+        <p class="desc">مهم وغير عاجل</p>
+        <div class="list" id="list-q2"></div>
+      </div>
+      <div class="quad" id="q3" ondragover="allowDrop(event)" ondrop="drop(event,'q3')" ondragleave="dragLeave(event)">
+        <h2><span class="dot"></span>فوّضه</h2>
+        <p class="desc">غير مهم وعاجل</p>
+        <div class="list" id="list-q3"></div>
+      </div>
+      <div class="quad" id="q4" ondragover="allowDrop(event)" ondrop="drop(event,'q4')" ondragleave="dragLeave(event)">
+        <h2><span class="dot"></span>احذفه أو أجّله</h2>
+        <p class="desc">غير مهم وغير عاجل</p>
+        <div class="list" id="list-q4"></div>
+      </div>
+    </div>
+
+    <div class="completed-sidebar">
+      <h3>المهام المنجزة</h3>
+      <div id="completedList"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal-box" id="modalBox"></div>
+  </div>
+
+<script>
+let tasks = [];
+let expandedIds = new Set();
+let modalTaskId = null;
+const COLORS = ['#D97757','#3C6E5C','#4A6FA5','#8C877A','#B5545E','#C99A3F'];
+const QUAD_LABEL = {q1:'مهم وعاجل', q2:'مهم وغير عاجل', q3:'غير مهم وعاجل', q4:'غير مهم وغير عاجل'};
+const QUAD_COLOR = {q1:'#D97757', q2:'#3C6E5C', q3:'#4A6FA5', q4:'#8C877A'};
+
+function toggleTheme(){
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  setTheme(!isDark);
+}
+function setTheme(dark){
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  document.getElementById('themeBtn').textContent = dark ? '☀️ فاتح' : '🌙 داكن';
+  try{ window.storage.set('theme', dark ? 'dark' : 'light'); }catch(e){}
+}
+async function loadTheme(){
+  try{
+    const res = await window.storage.get('theme');
+    setTheme(res && res.value === 'dark');
+  }catch(e){ setTheme(false); }
+}
+
+let aiFile = null;
+function onAiFileChange(inputEl){
+  const file = inputEl.files && inputEl.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    aiFile = { name:file.name, type:file.type, data:reader.result };
+    document.getElementById('aiFileName').textContent = file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function aiCreateTask(){
+  const input = document.getElementById('aiInput');
+  const btn = document.getElementById('aiBtn');
+  const text = input.value.trim();
+  if(!text && !aiFile) return;
+  btn.disabled = true; btn.textContent = '...جارٍ الصياغة';
+  const today = new Date().toISOString().slice(0,10);
+  try{
+    const promptText =
+      `التاريخ اليوم ${today}. حوّل وصف المهمة التالي${aiFile?' والملف المرفق':''} إلى JSON فقط بدون أي نص إضافي بهذا الشكل بالضبط:
+{"title":"عنوان مختصر للمهمة","quad":"q1|q2|q3|q4","due":"YYYY-MM-DD أو فارغ إن لم يُذكر تاريخ","details":"وصف تفصيلي موسّع للمهمة بجملتين إلى ثلاث"}
+تصنيف الخانة: q1 = مهم وعاجل، q2 = مهم وغير عاجل، q3 = غير مهم وعاجل، q4 = غير مهم وغير عاجل.
+وصف المهمة: """${text}"""`;
+
+    const content = [{type:'text', text: promptText}];
+    if(aiFile && aiFile.type.startsWith('image/')){
+      content.push({ type:'image', source:{ type:'base64', media_type: aiFile.type, data: aiFile.data.split(',')[1] } });
+    }else if(aiFile && aiFile.type === 'application/pdf'){
+      content.push({ type:'document', source:{ type:'base64', media_type:'application/pdf', data: aiFile.data.split(',')[1] } });
+    }
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, messages:[{role:'user', content}] })
+    });
+    const data = await res.json();
+    const raw = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    const newTask = {
+      id:'t'+Date.now(), text: parsed.title || text || (aiFile?aiFile.name:''),
+      quad: ['q1','q2','q3','q4'].includes(parsed.quad) ? parsed.quad : 'inbox',
+      color: COLORS[Math.floor(Math.random()*COLORS.length)],
+      created: today, due: parsed.due || '', done:false,
+      order: tasks.length,
+      details: parsed.details || '', checklist: [], comments: [],
+      attachments: aiFile ? [{id:'a'+Date.now(), name:aiFile.name, data:aiFile.data}] : []
+    };
+    tasks.push(newTask);
+    input.value = ''; aiFile = null; document.getElementById('aiFileName').textContent = '';
+    saveTasks(); render();
+    showToast('أنشأ الذكاء الاصطناعي المهمة وصنّفها');
+  }catch(e){
+    console.error(e);
+    showToast('تعذّر إنشاء المهمة بالذكاء الاصطناعي');
+  }finally{
+    btn.disabled = false; btn.textContent = '✨ إنشاء بالذكاء الاصطناعي';
+  }
+}
+
+let remindersOn = false;
+let notifiedIds = new Set();
+let reminderTimer = null;
+
+function enableNotifications(){
+  remindersOn = !remindersOn;
+  const btn = document.getElementById('notifBtn');
+  if(remindersOn){
+    btn.textContent = '🔕 إيقاف التذكيرات';
+    showToast('تم تفعيل التذكيرات داخل الصفحة');
+    checkReminders();
+    reminderTimer = setInterval(checkReminders, 60000);
+    if('Notification' in window && Notification.permission === 'default'){
+      Notification.requestPermission().catch(()=>{});
+    }
+  }else{
+    btn.textContent = '🔔 تفعيل التذكيرات';
+    clearInterval(reminderTimer);
+  }
+}
+
+function checkReminders(){
+  if(!remindersOn) return;
+  const today = new Date().toISOString().slice(0,10);
+  const due = tasks.filter(t=>!t.done && t.due && t.due <= today);
+  due.forEach(t=>{
+    if(notifiedIds.has(t.id)) return;
+    notifiedIds.add(t.id);
+    const label = t.due < today ? 'متأخرة' : 'مستحقة اليوم';
+    showToast(`تذكير: ${t.text} — ${label}`);
+    if('Notification' in window && Notification.permission === 'granted'){
+      try{ new Notification('تذكير بمهمة', { body: `${t.text} — ${label}` }); }catch(e){}
+    }
+  });
+}
+
+function showToast(msg){
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(()=> el.remove(), 3000);
+}
+
+function renderDueBanner(){
+  const today = new Date().toISOString().slice(0,10);
+  const due = tasks.filter(t=>!t.done && t.due && t.due <= today);
+  const banner = document.getElementById('dueBanner');
+  if(!due.length){ banner.classList.remove('show'); banner.innerHTML=''; return; }
+  banner.classList.add('show');
+  const overdue = due.filter(t=>t.due < today).length;
+  const todayCount = due.length - overdue;
+  banner.innerHTML = `<b>تنبيه:</b> لديك ${due.length} مهمة ${overdue?`(${overdue} متأخرة)`:''}${todayCount?` (${todayCount} اليوم)`:''}.
+    <ul>${due.map(t=>`<li></li>`).join('')}</ul>`;
+  banner.querySelectorAll('li').forEach((li,i)=> li.textContent = `${due[i].text} — ${due[i].due}`);
+}
+
+async function loadTasks(){
+  try{
+    const res = await window.storage.get('tasks');
+    tasks = res ? JSON.parse(res.value) : [];
+  }catch(e){ tasks = []; }
+  render();
+}
+async function saveTasks(){
+  try{ await window.storage.set('tasks', JSON.stringify(tasks)); }
+  catch(e){ console.error('save failed', e); }
+}
+
+function addTask(){
+  const input = document.getElementById('taskInput');
+  const text = input.value.trim();
+  if(!text) return;
+  const today = new Date().toISOString().slice(0,10);
+  tasks.push({
+    id: 't'+Date.now(),
+    text, quad: 'inbox',
+    color: COLORS[Math.floor(Math.random()*COLORS.length)],
+    created: today, due: '', done: false,
+    order: tasks.length,
+    details: '', checklist: [], comments: [], attachments: []
+  });
+  input.value = '';
+  saveTasks(); render();
+  showToast('تمت إضافة المهمة');
+}
+function deleteTask(id){ tasks = tasks.filter(t=>t.id!==id); saveTasks(); render(); showToast('تم حذف المهمة'); }
+function updateField(id, field, val){
+  const t = tasks.find(t=>t.id===id);
+  if(t){ t[field]=val; saveTasks(); render(); }
+}
+function toggleDone(id){
+  const t = tasks.find(t=>t.id===id);
+  if(t){ t.done = !t.done; saveTasks(); render(); if(t.done) showToast('أُنجزت المهمة'); }
+}
+function setColor(id, color){
+  const t = tasks.find(t=>t.id===id);
+  if(t){ t.color = color; saveTasks(); render(); }
+}
+
+function toggleExpand(id){
+  if(expandedIds.has(id)) expandedIds.delete(id); else expandedIds.add(id);
+  render();
+}
+
+function addChecklistItem(id, inputEl){
+  const t = tasks.find(t=>t.id===id);
+  const val = inputEl.value.trim();
+  if(!t || !val) return;
+  t.checklist = t.checklist || [];
+  t.checklist.push({id:'c'+Date.now(), text:val, done:false});
+  inputEl.value = '';
+  saveTasks(); render();
+}
+function toggleChecklistItem(taskId, itemId){
+  const t = tasks.find(t=>t.id===taskId);
+  const item = t && t.checklist.find(i=>i.id===itemId);
+  if(item){ item.done = !item.done; saveTasks(); render(); }
+}
+function deleteChecklistItem(taskId, itemId){
+  const t = tasks.find(t=>t.id===taskId);
+  if(t){ t.checklist = t.checklist.filter(i=>i.id!==itemId); saveTasks(); render(); }
+}
+
+function addComment(id, inputEl){
+  const t = tasks.find(t=>t.id===id);
+  const val = inputEl.value.trim();
+  if(!t || !val) return;
+  t.comments = t.comments || [];
+  t.comments.push({id:'m'+Date.now(), text:val, date:new Date().toISOString().slice(0,10)});
+  inputEl.value = '';
+  saveTasks(); render();
+}
+function deleteComment(taskId, commentId){
+  const t = tasks.find(t=>t.id===taskId);
+  if(t){ t.comments = t.comments.filter(c=>c.id!==commentId); saveTasks(); render(); }
+}
+
+function addAttachment(id, inputEl){
+  const file = inputEl.files && inputEl.files[0];
+  if(!file) return;
+  const t = tasks.find(t=>t.id===id);
+  if(!t) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    t.attachments = t.attachments || [];
+    t.attachments.push({id:'a'+Date.now(), name:file.name, data:reader.result});
+    inputEl.value = '';
+    saveTasks(); render();
+    showToast('تم إرفاق الملف');
+  };
+  reader.readAsDataURL(file);
+}
+function deleteAttachment(taskId, attId){
+  const t = tasks.find(t=>t.id===taskId);
+  if(t){ t.attachments = (t.attachments||[]).filter(a=>a.id!==attId); saveTasks(); render(); }
+}
+
+function openModal(id){ modalTaskId = id; expandedIds.add(id); renderModal(); }
+function closeModal(){ modalTaskId = null; renderModal(); }
+
+function expandedContentHTML(t){
+  const checklist = t.checklist || [];
+  const comments = t.comments || [];
+  const checklistHtml = checklist.map(i=>`
+    <div class="checklist-item">
+      <input type="checkbox" ${i.done?'checked':''} onchange="toggleChecklistItem('${t.id}','${i.id}')">
+      <span class="ctxt${i.done?' done':''}"></span>
+      <button class="mini-del" onclick="deleteChecklistItem('${t.id}','${i.id}')">×</button>
+    </div>`).join('');
+  const commentsHtml = comments.map(c=>`
+    <div class="comment-item">
+      <span class="cmtxt"></span>
+      <span class="cdate">${c.date}</span>
+      <button class="mini-del" onclick="deleteComment('${t.id}','${c.id}')">×</button>
+    </div>`).join('');
+
+  return `
+    <textarea placeholder="أضف تفاصيل للمهمة..." onchange="updateField('${t.id}','details',this.value)">${t.details||''}</textarea>
+    <div class="sec-title">المرفقات</div>
+    <div class="attachments-wrap"></div>
+    <div class="mini-add">
+      <input type="file" id="file-${t.id}" style="display:none" onchange="addAttachment('${t.id}',this)">
+      <button onclick="document.getElementById('file-${t.id}').click()">📎 إرفاق ملف</button>
+    </div>
+    <div class="sec-title">قائمة فرعية</div>
+    <div class="checklist-wrap"></div>
+    <div class="mini-add">
+      <input type="text" placeholder="عنصر جديد..." onkeydown="if(event.key==='Enter')addChecklistItem('${t.id}',this)">
+      <button onclick="addChecklistItem('${t.id}',this.previousElementSibling)">إضافة</button>
+    </div>
+    <div class="sec-title">تعليقات</div>
+    <div class="comments-wrap"></div>
+    <div class="mini-add">
+      <input type="text" placeholder="أضف تعليق..." onkeydown="if(event.key==='Enter')addComment('${t.id}',this)">
+      <button onclick="addComment('${t.id}',this.previousElementSibling)">إضافة</button>
+    </div>
+  `;
+}
+
+function fillTextNodes(container, t){
+  const checklist = t.checklist || [];
+  const comments = t.comments || [];
+  const attachments = t.attachments || [];
+  const aWrap = container.querySelector('.attachments-wrap');
+  if(aWrap){
+    aWrap.innerHTML = attachments.length ? '' : '';
+    attachments.forEach(a=>{
+      const row = document.createElement('div');
+      row.className = 'comment-item';
+      row.innerHTML = `<a class="cmtxt" style="color:var(--ink)" href="${a.data}" download="${a.name}"></a><button class="mini-del" onclick="deleteAttachment('${t.id}','${a.id}')">×</button>`;
+      row.querySelector('.cmtxt').textContent = '📎 ' + a.name;
+      aWrap.appendChild(row);
+    });
+  }
+  const cWrap = container.querySelector('.checklist-wrap');
+  if(cWrap){
+    cWrap.innerHTML = checklist.length ? '' : '';
+    checklist.forEach(i=>{
+      const row = document.createElement('div');
+      row.className = 'checklist-item';
+      row.innerHTML = `<input type="checkbox" ${i.done?'checked':''} onchange="toggleChecklistItem('${t.id}','${i.id}')"><span class="ctxt${i.done?' done':''}"></span><button class="mini-del" onclick="deleteChecklistItem('${t.id}','${i.id}')">×</button>`;
+      row.querySelector('.ctxt').textContent = i.text;
+      cWrap.appendChild(row);
+    });
+  }
+  const mWrap = container.querySelector('.comments-wrap');
+  if(mWrap){
+    mWrap.innerHTML = '';
+    comments.forEach(c=>{
+      const row = document.createElement('div');
+      row.className = 'comment-item';
+      row.innerHTML = `<span class="cmtxt"></span><span class="cdate">${c.date}</span><button class="mini-del" onclick="deleteComment('${t.id}','${c.id}')">×</button>`;
+      row.querySelector('.cmtxt').textContent = c.text;
+      mWrap.appendChild(row);
+    });
+  }
+}
+
+function taskCard(t){
+  const div = document.createElement('div');
+  const isOpen = expandedIds.has(t.id);
+  div.className = 'task' + (t.done?' done':'') + (isOpen?' open':'');
+  div.style.setProperty('--task-color', t.color || '#999');
+  div.style.setProperty('--task-bg', (t.color||'#999') + '20');
+  div.draggable = true;
+  div.id = t.id;
+  div.ondragstart = e => { if(e.target.classList.contains('txt')){ e.preventDefault(); return; } e.dataTransfer.setData('text/plain', t.id); div.classList.add('dragging'); };
+  div.ondragend = () => div.classList.remove('dragging');
+
+  const colorsHtml = COLORS.map(c=>`<span class="swatch" style="background:${c}" onclick="setColor('${t.id}','${c}');this.parentElement.classList.remove('open')"></span>`).join('');
+
+  div.innerHTML = `
+    <div class="task-top">
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleDone('${t.id}')">
+      <span class="title-wrap"><span class="txt"></span><button class="arrow" title="عرض التفاصيل" onclick="toggleExpand('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button></span>
+      <span class="task-actions">
+        <button class="expand-btn" title="فتح في نافذة" onclick="openModal('${t.id}')">⤢</button>
+        <button class="del" onclick="deleteTask('${t.id}')">×</button>
+      </span>
+    </div>
+    <div class="task-meta">
+      <span class="color-btn" onclick="this.nextElementSibling.classList.toggle('open')"></span>
+      <div class="colors">${colorsHtml}</div>
+      <span class="created">${t.created}</span>
+      <input type="date" value="${t.due||''}" onchange="updateField('${t.id}','due',this.value)">
+    </div>
+    <div class="task-details">${isOpen ? expandedContentHTML(t) : ''}</div>
+  `;
+  div.querySelector('.txt').textContent = t.text;
+  const txtEl = div.querySelector('.txt');
+  txtEl.addEventListener('mousedown', ()=>{ div.draggable = false; });
+  txtEl.addEventListener('mouseup', ()=>{ div.draggable = true; });
+  if(isOpen) fillTextNodes(div.querySelector('.task-details'), t);
+  return div;
+}
+
+function byDue(a,b){
+  if(!a.due && !b.due) return a.order-b.order;
+  if(!a.due) return 1;
+  if(!b.due) return -1;
+  return a.due.localeCompare(b.due);
+}
+
+function render(){
+  const active = tasks.filter(t=>!t.done);
+  const done = tasks.filter(t=>t.done);
+
+  // sidebar: show active tasks only
+  const side = document.getElementById('sideList');
+  side.innerHTML = active.length ? '' : '<div class="empty">لا مهام بعد</div>';
+  active.filter(t=>t.quad==='inbox').sort(byDue).forEach(t=> side.appendChild(taskCard(t)));
+  active.filter(t=>t.quad!=='inbox').sort(byDue).forEach(t=> side.appendChild(taskCard(t)));
+
+  ['q1','q2','q3','q4'].forEach(q=>{
+    const container = document.getElementById('list-'+q);
+    const items = active.filter(t=>t.quad===q).sort(byDue);
+    container.classList.toggle('cols', items.length > 6);
+    container.innerHTML = items.length ? '' : '<div class="empty">اسحب مهمة هنا</div>';
+    items.forEach(t=>{
+      const card = taskCard(t);
+      card.ondragover = e=>{ e.preventDefault(); e.stopPropagation(); reorderPreview(e, container, card); };
+      container.appendChild(card);
+    });
+  });
+
+  const completed = document.getElementById('completedList');
+  completed.innerHTML = done.length ? '' : '<div class="empty">لا مهام منجزة بعد</div>';
+  done.forEach(t=> completed.appendChild(taskCard(t)));
+
+  renderDashboard();
+  renderModal();
+  renderDueBanner();
+}
+
+function renderModal(){
+  const overlay = document.getElementById('modalOverlay');
+  const box = document.getElementById('modalBox');
+  if(!modalTaskId){ overlay.classList.remove('open'); box.innerHTML=''; return; }
+  const t = tasks.find(x=>x.id===modalTaskId);
+  if(!t){ overlay.classList.remove('open'); return; }
+  overlay.classList.add('open');
+  box.style.background = (t.color||'#999') + '20';
+  box.style.borderTop = `4px solid ${t.color||'#999'}`;
+  box.innerHTML = `
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h2></h2>
+    ${expandedContentHTML(t)}
+  `;
+  box.querySelector('h2').textContent = t.text;
+  fillTextNodes(box, t);
+}
+
+function reorderPreview(e, container, overCard){
+  const draggingEl = container.querySelector('.dragging');
+  if(!draggingEl || draggingEl === overCard) return;
+  const rect = overCard.getBoundingClientRect();
+  const before = (e.clientY - rect.top) < rect.height/2;
+  container.insertBefore(draggingEl, before ? overCard : overCard.nextSibling);
+}
+
+function allowDrop(e){ e.preventDefault(); e.currentTarget.classList.add('drop-hover'); }
+function dragLeave(e){ e.currentTarget.classList.remove('drop-hover'); }
+
+function drop(e, quad){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drop-hover');
+  const id = e.dataTransfer.getData('text/plain');
+  const task = tasks.find(t=>t.id===id);
+  if(!task) return;
+  task.quad = quad;
+  // recompute order based on current DOM order within target container
+  const containerId = quad==='inbox' ? 'sideList' : 'list-'+quad;
+  const container = document.getElementById(containerId);
+  const domOrder = Array.from(container.children).map(el=>el.id).filter(Boolean);
+  if(!domOrder.includes(id)) domOrder.push(id);
+  domOrder.forEach((tid, idx)=>{
+    const tk = tasks.find(x=>x.id===tid);
+    if(tk) tk.order = idx;
+  });
+  saveTasks(); render();
+}
+
+function renderDashboard(){
+  const counts = {q1:0,q2:0,q3:0,q4:0};
+  tasks.forEach(t=>{ if(counts[t.quad]!==undefined) counts[t.quad]++; });
+  const max = Math.max(1, ...Object.values(counts));
+  const bars = document.getElementById('importanceBars');
+  bars.innerHTML = Object.keys(counts).map(q=>`
+    <div class="bar-row">
+      <span class="bar-label">${QUAD_LABEL[q]}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(counts[q]/max*100)}%;background:${QUAD_COLOR[q]}"></div></div>
+      <span class="bar-count">${counts[q]}</span>
+    </div>`).join('');
+
+  const total = tasks.length;
+  const done = tasks.filter(t=>t.done).length;
+  document.getElementById('doneCount').textContent = `${done}/${total}`;
+  const pct = total ? (done/total*100) : 0;
+  const svg = document.getElementById('donutSvg');
+  const r = 15.9155;
+  svg.innerHTML = `
+    <circle cx="18" cy="18" r="${r}" fill="none" stroke="#E4E1D8" stroke-width="4"></circle>
+    <circle cx="18" cy="18" r="${r}" fill="none" stroke="#3C6E5C" stroke-width="4"
+      stroke-dasharray="${pct} ${100-pct}" stroke-dashoffset="25" stroke-linecap="round"></circle>
+  `;
+}
+
+document.getElementById('taskInput').addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
+loadTheme();
+loadTasks();
+</script>
+</body>
+</html>
