@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -229,7 +230,41 @@
     <div class="modal-box" id="modalBox"></div>
   </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCAM6lW5yHq2n51rcQeyFnrke3I-kCsKfU",
+    authDomain: "priority-matrix-27720.firebaseapp.com",
+    projectId: "priority-matrix-27720",
+    storageBucket: "priority-matrix-27720.firebasestorage.app",
+    messagingSenderId: "410928647527",
+    appId: "1:410928647527:web:70338cb1494e12ebcf73c2"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const _db = firebase.firestore();
+  const _docRef = _db.collection('priorityMatrix').doc('shared');
+
+  window.storage = {
+    async get(key){
+      const snap = await _docRef.get();
+      const data = snap.exists ? snap.data() : {};
+      if(!(key in data)) throw new Error('key not found: ' + key);
+      return { key, value: data[key], shared: true };
+    },
+    async set(key, value){
+      await _docRef.set({ [key]: value }, { merge: true });
+      return { key, value, shared: true };
+    },
+    async delete(key){
+      await _docRef.update({ [key]: firebase.firestore.FieldValue.delete() });
+      return { key, deleted: true, shared: true };
+    }
+  };
+</script>
+
+<script>
+
 let tasks = [];
 let expandedIds = new Set();
 let modalTaskId = null;
@@ -475,6 +510,13 @@ function deleteAttachment(taskId, attId){
   if(t){ t.attachments = (t.attachments||[]).filter(a=>a.id!==attId); saveTasks(); render(); }
 }
 
+function tintColor(hex, ratio){
+  hex = hex.replace('#','');
+  const r = parseInt(hex.substring(0,2),16), g = parseInt(hex.substring(2,4),16), b = parseInt(hex.substring(4,6),16);
+  const mix = c => Math.round(c + (255-c)*ratio);
+  return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
+}
+
 function openModal(id){ modalTaskId = id; expandedIds.add(id); renderModal(); }
 function closeModal(){ modalTaskId = null; renderModal(); }
 
@@ -639,7 +681,7 @@ function renderModal(){
   const t = tasks.find(x=>x.id===modalTaskId);
   if(!t){ overlay.classList.remove('open'); return; }
   overlay.classList.add('open');
-  box.style.background = (t.color||'#999') + '20';
+  box.style.background = tintColor(t.color||'#999', 0.9);
   box.style.borderTop = `4px solid ${t.color||'#999'}`;
   box.innerHTML = `
     <button class="modal-close" onclick="closeModal()">×</button>
